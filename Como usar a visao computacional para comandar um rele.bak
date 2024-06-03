@@ -1,0 +1,44 @@
+Como usar a visao computacional para comandar um rele:
+	https://blog.eletrogate.com/visao-computacional-controlando-um-rele-com-as-maos/?utm_source=Lahar&utm_medium=email&utm_campaign=_20240531_102000_Tutorial__Controlando_um_rele_com_as_maos__31
+	
+Lib cvzone:
+	https://github.com/cvzone/cvzone/blob/master/cvzone
+	
+Links relacionados:
+	https://www.youtube.com/watch?v=N-70d6Cp8xo
+	https://www.youtube.com/watch?v=winCGaZNy_c
+	https://www.youtube.com/watch?v=_qg-fQT0DRs
+	Video sobre a lib cvzone:
+		https://www.youtube.com/watch?v=ieXQTtQgyo0
+	
+	Detectar mão direita e esquerda separadamente:
+		https://www.geeksforgeeks.org/right-and-left-hand-detection-using-python/
+		
+	Detecção de movimento da face:
+		https://www.youtube.com/watch?v=-NQe_Mf1zUE
+		Código atualizado:
+			import cv2
+			from cvzone.FaceMeshModule import FaceMeshDetector
+			cap = cv2.VideoCapture(0)
+			detector = FaceMeshDetector(maxFaces=1)
+			while True:
+				success, img = cap.read()
+				img = cv2.flip(img, 1)
+				img, faces = detector.findFaceMesh(img)
+				if faces:
+					print(faces[0][0])
+				cv2.imshow("Image", img)
+				cv2.waitKey(1)
+	
+	Link do Video: Learn Computer Vision with CVZone in 2 Hours
+		https://www.youtube.com/watch?v=ieXQTtQgyo0
+		
+	Video que mostra cada ponto do rosto e o seu código (0 a 467)
+	Detect 468 Face Landmarks in Real-time | OpenCV Python | Computer Vision
+		https://www.youtube.com/watch?v=V9bzew8A1tc
+		Obs: Codigo no tempo: 34:00
+		
+	Site dos cursos de computer vision:
+		https://www.computervision.zone/
+		
+		
