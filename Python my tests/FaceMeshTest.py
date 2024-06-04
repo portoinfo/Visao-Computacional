@@ -11,11 +11,13 @@ import math
 
 class FaceMeshDetector:
 
-    def __init__(self, staticMode=False, maxFaces=2, minDetectionCon=0.5, minTrackCon=0.5):
+    def __init__(self, staticMode=False, maxFaces=2, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_left_eye_distance=0):
         self.staticMode = staticMode
         self.maxFaces = maxFaces
         self.minDetectionCon = minDetectionCon
         self.minTrackCon = minTrackCon
+        self.initial_mouth_distance = initial_mouth_distance
+        self.initial_left_eye_distance = initial_left_eye_distance
 
         self.mpDraw = mp.solutions.drawing_utils
         self.mpFaceMesh = mp.solutions.face_mesh
@@ -38,19 +40,26 @@ class FaceMeshDetector:
                 for id, lm in enumerate(faceLms.landmark):
                     ih, iw, ic = img.shape
                     x, y = int(lm.x * iw), int(lm.y * ih)
-                    #if (id > 210) and (id < 250):
-                    #if (id%3 == 0):
-                    point_1 = 72
-                    point_2 = 84
-                    if (id == point_1) or (id == point_2):
+                    point_mouth_1 = 72
+                    point_mouth_2 = 84
+                    point_left_eye_1 = 104
+                    point_left_eye_2 = 226
+                    if (point_mouth_2 > point_mouth_2):
+                        point_max = point_mouth_2
+                    else:
+                        point_max = point_left_eye_2
+                    #if (id%4 == 0):
+                    if (id == point_mouth_1) or (id == point_mouth_2) or (id == point_left_eye_1) or (id == point_left_eye_2):
                         cv2.putText(img, str(id), (x, y), cv2.FONT_HERSHEY_PLAIN,
-                                 0.7, (0, 255, 0), 1)
+                                 0.5, (0, 255, 0), 1)
                     face.append([x, y])
-                    if (id == point_2):
-                    	leftEyeUpPoint = face[point_1]
-                    	leftEyeDownPoint = face[point_2]
+                    if (id == point_max):
+                    	leftEyeUpPoint = face[point_left_eye_1]
+                    	leftEyeDownPoint = face[point_left_eye_2]
                     	leftEyeVerticalDistance, info = self.findDistance(leftEyeUpPoint, leftEyeDownPoint)
-                    	print(leftEyeVerticalDistance)
+                    	if (self.initial_left_eye_distance == 0):
+                        	self.initial_left_eye_distance = leftEyeVerticalDistance                        
+                    	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", self.initial_left_eye_distance)
                 faces.append(face)
         return img, faces
 
@@ -85,8 +94,7 @@ class FaceMeshDetector:
 def main():
     cap = cv2.VideoCapture(0)
 
-    detector = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5, minTrackCon=0.5)
-
+    detector = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_left_eye_distance=0)
     while True:
         success, img = cap.read()
 
