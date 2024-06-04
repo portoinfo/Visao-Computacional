@@ -59,7 +59,7 @@ class FaceMeshDetector:
                     	leftEyeVerticalDistance, info = self.findDistance(leftEyeUpPoint, leftEyeDownPoint)
                     	if (self.initial_left_eye_distance == 0):
                         	self.initial_left_eye_distance = leftEyeVerticalDistance                        
-                    	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", self.initial_left_eye_distance)
+                    	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
                 faces.append(face)
         return img, faces
 
