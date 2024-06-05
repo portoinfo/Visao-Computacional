@@ -78,11 +78,11 @@ class FaceMeshDetector:
                     	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15) and (self.initial_mouth_distance > 0):
                         	print("A boca está aberta . . .")
                         	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
-                        	cv2.waitKey(1000)
-                    	if ((int(self.initial_left_eye_distance) - int(leftEyeVerticalDistance)) > 5) and (self.initial_left_eye_distance > 0):
+                        	#cv2.waitKey(1000)
+                    	if ((int(self.initial_left_eye_distance) - int(leftEyeVerticalDistance)) >= 4) and (self.initial_left_eye_distance > 0):
                         	print("A olho está fechado . . .")
                         	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
-                        	cv2.waitKey(1000)
+                        	#cv2.waitKey(1000)
                     	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
                         	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
                 faces.append(face)
@@ -131,7 +131,7 @@ def main():
         cv2.imshow("Image", img)
 
         # Wait for 1 millisecond to check for any user input, keeping the window open
-        cv2.waitKey(20)
+        cv2.waitKey(10)
 
 
 if __name__ == "__main__":
