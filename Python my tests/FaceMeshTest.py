@@ -7,6 +7,18 @@ Website: https://www.computervision.zone/
 import cv2
 import mediapipe as mp
 import math
+import serial
+
+conectado = False
+porta = 'COM4'
+velocidadeBaud = 115200
+
+try: 
+   SerialArduino = serial.Serial(porta, velocidadeBaud, timeout=0.5)
+   conectado = True
+except serial.SerialException as e: 
+   print("Erro ao conectar. Verifique a porta " + porta + " serial ou religue o Arduino", e)
+
 
 
 class FaceMeshDetector:
@@ -30,12 +42,16 @@ class FaceMeshDetector:
         self.totalMouth=0
         self.totalLeftEye=0
         self.valueToAverage = 200
+        self.countLeftEyeClosed = 0
+        self.countMouthOpened = 0
+        self.relay1AlreadyActived = 0
+        self.relay2AlreadyActived = 0
 
     def findFaceMesh(self, img, draw=True):
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.faceMesh.process(self.imgRGB)
         faces = []
-        if self.results.multi_face_landmarks:
+        if self.results.multi_face_landmarks: 
             for faceLms in self.results.multi_face_landmarks:
                 if draw:
                     self.mpDraw.draw_landmarks(img, faceLms, self.mpFaceMesh.FACEMESH_CONTOURS,
@@ -74,17 +90,37 @@ class FaceMeshDetector:
                     	if (self.initial_mouth_distance == 0) and (self.count == self.valueToAverage):
                         	self.initial_mouth_distance = self.totalMouth / self.valueToAverage    
                         	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
-                    	self.count = self.count + 1
                     	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15) and (self.initial_mouth_distance > 0):
-                        	print("A boca está aberta . . .")
-                        	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
-                        	#cv2.waitKey(1000)
+                            self.countMouthOpened = self.countMouthOpened + 1
+                            if (self.countMouthOpened == 20):
+                            	if (self.relay1AlreadyActived == 0):
+                                	 SerialArduino.write('1\n'.encode())
+                                	 self.relay1AlreadyActived = 1
+                            	else:
+                                	 SerialArduino.write('0\n'.encode()) 
+                                	 self.relay1AlreadyActived = 0     
+                            	print("A boca está aberta . . .")
+                            	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
+                            	#cv2.waitKey(1000)
+                    	else:
+                        	self.countMouthOpened = 0
                     	if ((int(self.initial_left_eye_distance) - int(leftEyeVerticalDistance)) >= 4) and (self.initial_left_eye_distance > 0):
-                        	print("A olho está fechado . . .")
-                        	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
-                        	#cv2.waitKey(1000)
+                            self.countLeftEyeClosed = self.countLeftEyeClosed + 1
+                            if (self.countLeftEyeClosed == 10):
+                            	if (self.relay2AlreadyActived == 0):
+                                	 SerialArduino.write('3\n'.encode())
+                                	 self.relay2AlreadyActived = 1
+                            	else:
+                                	 SerialArduino.write('2\n'.encode()) 
+                                	 self.relay2AlreadyActived = 0     
+                            	print("A olho está fechado . . .")
+                            	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+                            	#cv2.waitKey(1000)
+                    	else:
+                        	self.countLeftEyeClosed = 0
                     	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
                         	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+                    	self.count = self.count + 1
                 faces.append(face)
         return img, faces
 
