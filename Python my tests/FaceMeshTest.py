@@ -10,17 +10,6 @@ import math
 import serial
 from cvzone.HandTrackingModule import HandDetector
 
-conectado = False
-porta = 'COM4'
-velocidadeBaud = 115200
-
-try: 
-   SerialArduino = serial.Serial(porta, velocidadeBaud, timeout=0.5)
-   conectado = True
-except serial.SerialException as e: 
-   print("Erro ao conectar. Verifique a porta " + porta + " serial ou religue o Arduino", e)
-
-
 
 class FaceMeshDetector:
 
@@ -47,8 +36,9 @@ class FaceMeshDetector:
         self.countMouthOpened = 0
         self.relay1AlreadyActived = 0
         self.relay2AlreadyActived = 0
+        self.totalCountClosed = 10
 
-    def findFaceMesh(self, img, draw=True):
+    def findFaceMesh(self, img, draw=True, SerialArduino = None):
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.faceMesh.process(self.imgRGB)
         faces = []
@@ -93,7 +83,7 @@ class FaceMeshDetector:
                         	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
                     	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15) and (self.initial_mouth_distance > 0):
                             self.countMouthOpened = self.countMouthOpened + 1
-                            if (self.countMouthOpened == 20):
+                            if (self.countMouthOpened == self.totalCountClosed):
                             	if (self.relay1AlreadyActived == 0):
                                 	 SerialArduino.write('1\n'.encode())
                                 	 self.relay1AlreadyActived = 1
@@ -107,7 +97,7 @@ class FaceMeshDetector:
                         	self.countMouthOpened = 0
                     	if ((int(self.initial_left_eye_distance) - int(leftEyeVerticalDistance)) >= 4) and (self.initial_left_eye_distance > 0):
                             self.countLeftEyeClosed = self.countLeftEyeClosed + 1
-                            if (self.countLeftEyeClosed == 10):
+                            if (self.countLeftEyeClosed == self.totalCountClosed):
                             	if (self.relay2AlreadyActived == 0):
                                 	 SerialArduino.write('3\n'.encode())
                                 	 self.relay2AlreadyActived = 1
@@ -123,6 +113,7 @@ class FaceMeshDetector:
                         	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
                     	self.count = self.count + 1
                 faces.append(face)
+
         return img, faces
 
     def findDistance(self,p1, p2, img=None):
@@ -152,29 +143,15 @@ class FaceMeshDetector:
         #else:
         #    return length, info
         return length, info
-
-def main():
-    cap = cv2.VideoCapture(0)
-
-    detectorFace = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_left_eye_distance=0)
-# Initialize the HandDetector class with the given parameters
-    detectorHands = HandDetector(staticMode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, minTrackCon=0.5)
-
-    while True:
-        success, img = cap.read()
-
-        img, faces = detectorFace.findFaceMesh(img, False)
-        #if len(faces)!= 0:
-        #   print(len(faces[0]))
-
-        # Find hands in the current frame
-        # The 'draw' parameter draws landmarks and hand outlines on the image if set to True
-        # The 'flipType' parameter flips the image, making it easier for some detections
-        hands, img = detectorHands.findHands(img, draw=True, flipType=True)
-        
-    # Check if any hands are detected
+    
+def processHands(img, detectorHands=None, SerialArduino = None):
+	# Find hands in the current frame
+	# The 'draw' parameter draws landmarks and hand outlines on the image if set to True
+	# The 'flipType' parameter flips the image, making it easier for some detections
+    hands, img = detectorHands.findHands(img, draw=True, flipType=True)
+	# Check if any hands are detected
     if hands:
-        # Information for the first hand detected
+		# Information for the first hand detected
         hand1 = hands[0]  # Get the first hand detected
         lmList1 = hand1["lmList"]  # List of 21 landmarks for the first hand
         bbox1 = hand1["bbox"]  # Bounding box around the first hand (x,y,w,h coordinates)
@@ -183,17 +160,19 @@ def main():
 
         # Count the number of fingers up for the first hand
         fingers1 = detectorHands.fingersUp(hand1)
-        print(f'H1 = {fingers1.count(1)}', end=" ")  # Print the count of fingers that are up
+        #print(f'H1 = {fingers1.count(1)}', end=" ")  # Print the count of fingers that are up
 
         # Calculate distance between specific landmarks on the first hand and draw it on the image
         length, info, img = detectorHands.findDistance(lmList1[8][0:2], lmList1[12][0:2], img, color=(255, 0, 255),
-                                                  scale=10)
+                                                scale=10)
 
         finges1 = detectorHands.fingersUp(hands[0])
         if finges1[0] == 0 and finges1[1] == 1 and finges1[2] == 0 and finges1[3] == 0 and finges1[4] == 0:
-           SerialArduino.write('1\n'.encode())      
+            SerialArduino.write('1\n'.encode())      
+            print("ativou rele 1 . . .")
         if finges1[0] == 0 and finges1[1] == 0 and finges1[2] == 0 and finges1[3] == 0 and finges1[4] == 0:
-           SerialArduino.write('0\n'.encode())
+            SerialArduino.write('0\n'.encode())
+            print("Desativou rele 1 . . .")
 
         # Check if a second hand is detected
         if len(hands) == 2:
@@ -206,24 +185,57 @@ def main():
 
             # Count the number of fingers up for the second hand
             fingers2 = detectorHands.fingersUp(hand2)
-            print(f'H2 = {fingers2.count(1)}', end=" ")
+            #print(f'H2 = {fingers2.count(1)}', end=" ")
 
             # Calculate distance between the index fingers of both hands and draw it on the image
             length, info, img = detectorHands.findDistance(lmList1[8][0:2], lmList2[8][0:2], img, color=(255, 0, 0),
-                                                      scale=10)
+                                                    scale=10)
 
             finges2 = detectorHands.fingersUp(hands[1])
             if finges2[0] == 0 and finges2[1] == 1 and finges2[2] == 1 and finges2[3] == 0 and finges2[4] == 0:
-               SerialArduino.write('3\n'.encode())      
+                SerialArduino.write('3\n'.encode()) 
+                print("Ativou rele 2 . . .")     
             if finges2[0] == 0 and finges2[1] == 0 and finges2[2] == 0 and finges2[3] == 0 and finges2[4] == 0:
-               SerialArduino.write('2\n'.encode())
+                SerialArduino.write('2\n'.encode())
+                print("Desativou rele 2 . . .")
 
-        print(" ")  # New line for better readability of the printed output
+        #print(" ")  # New line for better readability of the printed output
+
+    return img, hands
+
+def main():
+    cap = cv2.VideoCapture(0)
+
+    conectado = False
+    porta = 'COM4'
+    velocidadeBaud = 115200
+
+    try: 
+        SerialArduino = serial.Serial(porta, velocidadeBaud, timeout=0.5)
+        conectado = True
+    except serial.SerialException as e: 
+        print("Erro ao conectar. Verifique a porta " + porta + " serial ou religue o Arduino", e)
+        SerialArduino = None
+
+
+    detectorFace = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_left_eye_distance=0)
+# Initialize the HandDetector class with the given parameters
+    detectorHands = HandDetector(staticMode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, minTrackCon=0.5)
+
+    while True:
+        success, img = cap.read()
+
+        img, faces = detectorFace.findFaceMesh(img, False, SerialArduino)
+        #if len(faces)!= 0:
+        #   print(len(faces[0]))
+
+        processHands(img, detectorHands, SerialArduino)
+
 		# show camera image with defined points
         cv2.imshow("Image", img)
 
         # Wait for 1 millisecond to check for any user input, keeping the window open
-        cv2.waitKey(10)
+        cv2.waitKey(1)
 
 
 if __name__ == "__main__":
