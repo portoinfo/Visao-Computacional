@@ -26,6 +26,9 @@ class FaceMeshDetector:
                                                  min_detection_confidence=self.minDetectionCon,
                                                  min_tracking_confidence=self.minTrackCon)
         self.drawSpec = self.mpDraw.DrawingSpec(thickness=1, circle_radius=2)
+        self.count=0
+        self.totalMouth=0
+        self.totalLeftEye=0
 
     def findFaceMesh(self, img, draw=True):
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -54,12 +57,31 @@ class FaceMeshDetector:
                                  0.5, (0, 255, 0), 1)
                     face.append([x, y])
                     if (id == point_max):
+						# calculate distance for lefteye points
                     	leftEyeUpPoint = face[point_left_eye_1]
                     	leftEyeDownPoint = face[point_left_eye_2]
                     	leftEyeVerticalDistance, info = self.findDistance(leftEyeUpPoint, leftEyeDownPoint)
-                    	if (self.initial_left_eye_distance == 0):
-                        	self.initial_left_eye_distance = leftEyeVerticalDistance                        
-                    	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+                    	self.totalLeftEye += leftEyeVerticalDistance
+                    	if (self.initial_left_eye_distance == 0) and (self.count == 10):
+                        	self.initial_left_eye_distance = self.totalLeftEye / 10                        
+                        	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+						# calculate distance for mouth_points
+                    	mouthUpPoint = face[point_mouth_1]
+                    	MouthDownPoint = face[point_mouth_2]
+                    	mouthVerticalDistance, info = self.findDistance(mouthUpPoint, MouthDownPoint)
+                    	self.totalMouth += mouthVerticalDistance
+                    	if (self.initial_mouth_distance == 0) and (self.count == 10):
+                        	self.initial_mouth_distance = self.totalMouth / 10    
+                        	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
+                    	self.count = self.count + 1
+                    	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15):
+                        	print("A boca está aberta . . .")
+                        	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
+                        	#cv2.waitKey(100)
+                    	if ((self.initial_left_eye_distance - leftEyeVerticalDistance) > 7):
+                        	print("A olho está fechado . . .")
+                        	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+                        	#cv2.waitKey(100)
                 faces.append(face)
         return img, faces
 
