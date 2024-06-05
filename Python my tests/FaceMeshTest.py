@@ -29,6 +29,7 @@ class FaceMeshDetector:
         self.count=0
         self.totalMouth=0
         self.totalLeftEye=0
+        self.valueToAverage = 200
 
     def findFaceMesh(self, img, draw=True):
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -62,26 +63,28 @@ class FaceMeshDetector:
                     	leftEyeDownPoint = face[point_left_eye_2]
                     	leftEyeVerticalDistance, info = self.findDistance(leftEyeUpPoint, leftEyeDownPoint)
                     	self.totalLeftEye += leftEyeVerticalDistance
-                    	if (self.initial_left_eye_distance == 0) and (self.count == 10):
-                        	self.initial_left_eye_distance = self.totalLeftEye / 10                        
+                    	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
+                        	self.initial_left_eye_distance = self.totalLeftEye / self.valueToAverage                        
                         	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
 						# calculate distance for mouth_points
                     	mouthUpPoint = face[point_mouth_1]
                     	MouthDownPoint = face[point_mouth_2]
                     	mouthVerticalDistance, info = self.findDistance(mouthUpPoint, MouthDownPoint)
                     	self.totalMouth += mouthVerticalDistance
-                    	if (self.initial_mouth_distance == 0) and (self.count == 10):
-                        	self.initial_mouth_distance = self.totalMouth / 10    
+                    	if (self.initial_mouth_distance == 0) and (self.count == self.valueToAverage):
+                        	self.initial_mouth_distance = self.totalMouth / self.valueToAverage    
                         	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
                     	self.count = self.count + 1
-                    	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15):
+                    	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15) and (self.initial_mouth_distance > 0):
                         	print("A boca está aberta . . .")
                         	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
-                        	#cv2.waitKey(100)
-                    	if ((self.initial_left_eye_distance - leftEyeVerticalDistance) > 7):
+                        	cv2.waitKey(1000)
+                    	if ((int(self.initial_left_eye_distance) - int(leftEyeVerticalDistance)) > 5) and (self.initial_left_eye_distance > 0):
                         	print("A olho está fechado . . .")
                         	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
-                        	#cv2.waitKey(100)
+                        	cv2.waitKey(1000)
+                    	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
+                        	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
                 faces.append(face)
         return img, faces
 
@@ -128,7 +131,7 @@ def main():
         cv2.imshow("Image", img)
 
         # Wait for 1 millisecond to check for any user input, keeping the window open
-        cv2.waitKey(200)
+        cv2.waitKey(20)
 
 
 if __name__ == "__main__":
