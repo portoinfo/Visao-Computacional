@@ -31,7 +31,7 @@ class FaceMeshDetector:
         self.count=0
         self.totalMouth=0
         self.totalLeftEye=0
-        self.valueToAverage = 200
+        self.valueToAverage = 100
         self.countLeftEyeClosed = 0
         self.countHeadBalanced = 0
         self.countMouthOpened = 0
@@ -128,7 +128,7 @@ class FaceMeshDetector:
                             self.maxHeadDistance = (self.horizBalanceTrigger / 2)
                             self.countHeadBalanced = self.countHeadBalanced + 1
                             if (self.countHeadBalanced == self.totalCountBalanced):
-                            	print("Balançou a cabeça: ", headBalancedDistance)
+                            	#print("Balançou a cabeça: ", headBalancedDistance)
                             	self.countHeadBalanced = 0                                 
                             	if (self.relay3AlreadyActived == 0):
                                 	SerialArduino.write('1\n'.encode())
@@ -136,9 +136,9 @@ class FaceMeshDetector:
                             	else:
                                 	SerialArduino.write('0\n'.encode()) 
                                 	self.relay3AlreadyActived = 0
-                            	cv2.waitKey(1000)
-                    	else:
-                            print("Não balançou a cabeça: ", headBalancedDistance)
+                            	cv2.waitKey(500)
+                    	#else:
+                        #    print("Não balançou a cabeça: ", headBalancedDistance)
 						#print("face[leftEyeUp]: ", headBalancedDistance)
                 faces.append(face)
 
@@ -172,7 +172,7 @@ class FaceMeshDetector:
         #    return length, info
         return length, info
     
-def processHands(img, detectorHands=None, SerialArduino = None):
+def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated1 = 0, alreadyActivated2 = 0):
 	# Find hands in the current frame
 	# The 'draw' parameter draws landmarks and hand outlines on the image if set to True
 	# The 'flipType' parameter flips the image, making it easier for some detections
@@ -195,13 +195,16 @@ def processHands(img, detectorHands=None, SerialArduino = None):
                                                 scale=10)
 
         finges1 = detectorHands.fingersUp(hands[0])
-        if finges1[0] == 0 and finges1[1] == 1 and finges1[2] == 0 and finges1[3] == 0 and finges1[4] == 0:
-            SerialArduino.write('1\n'.encode())      
-            print("ativou rele 1 . . .")
+        if finges1[0] == 0 and finges1[1] == 1 and finges1[2] == 1 and finges1[3] == 1 and finges1[4] == 1:
+            if (alreadyActivated1 == 0):
+                SerialArduino.write('1\n'.encode())    
+                alreadyActivated1 = 1  
+                print("ativou rele 1 . . .")
         if finges1[0] == 0 and finges1[1] == 0 and finges1[2] == 0 and finges1[3] == 0 and finges1[4] == 0:
-            SerialArduino.write('0\n'.encode())
-            print("Desativou rele 1 . . .")
-
+            if (alreadyActivated1 == 1):
+                SerialArduino.write('0\n'.encode())
+                print("Desativou rele 1 . . .")
+                alreadyActivated1 = 0
         # Check if a second hand is detected
         if len(hands) == 2:
             # Information for the second hand
@@ -221,15 +224,19 @@ def processHands(img, detectorHands=None, SerialArduino = None):
 
             finges2 = detectorHands.fingersUp(hands[1])
             if finges2[0] == 0 and finges2[1] == 1 and finges2[2] == 1 and finges2[3] == 0 and finges2[4] == 0:
-                SerialArduino.write('3\n'.encode()) 
-                print("Ativou rele 2 . . .")     
+                if (alreadyActivated2 == 0):
+                    SerialArduino.write('3\n'.encode()) 
+                    alreadyActivated2 = 1
+                    print("Ativou rele 2 . . .")     
             if finges2[0] == 0 and finges2[1] == 0 and finges2[2] == 0 and finges2[3] == 0 and finges2[4] == 0:
-                SerialArduino.write('2\n'.encode())
-                print("Desativou rele 2 . . .")
+                if (alreadyActivated2 == 1):
+                    SerialArduino.write('2\n'.encode())
+                    alreadyActivated2 = 0
+                    print("Desativou rele 2 . . .")
 
         #print(" ")  # New line for better readability of the printed output
 
-    return img, hands
+    return img, alreadyActivated1, alreadyActivated2
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -250,6 +257,9 @@ def main():
 # Initialize the HandDetector class with the given parameters
     detectorHands = HandDetector(staticMode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, minTrackCon=0.5)
 
+    alreadyActivated1 = 0
+    alreadyActivated2 = 0
+    
     while True:
         success, img = cap.read()
 
@@ -257,7 +267,7 @@ def main():
         #if len(faces)!= 0:
         #   print(len(faces[0]))
 
-        processHands(img, detectorHands, SerialArduino)
+        img, alreadyActivated1, alreadyActivated2 = processHands(img, detectorHands, SerialArduino, alreadyActivated1, alreadyActivated2)
 
 		# show camera image with defined points
         cv2.imshow("Image", img)
