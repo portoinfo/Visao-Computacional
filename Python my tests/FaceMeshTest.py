@@ -33,10 +33,16 @@ class FaceMeshDetector:
         self.totalLeftEye=0
         self.valueToAverage = 200
         self.countLeftEyeClosed = 0
+        self.countHeadBalanced = 0
         self.countMouthOpened = 0
         self.relay1AlreadyActived = 0
         self.relay2AlreadyActived = 0
+        self.relay3AlreadyActived = 0
         self.totalCountClosed = 10
+        self.totalCountBalanced = 5
+        self.headBalancedPointOld = None
+        self.horizBalanceTrigger = 30
+        self.maxHeadDistance = 0
 
     def findFaceMesh(self, img, draw=True, SerialArduino = None):
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -112,6 +118,29 @@ class FaceMeshDetector:
                     	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
                         	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
                     	self.count = self.count + 1
+                        # processing head balance 
+                    	if (self.headBalancedPointOld == None):
+                        	self.headBalancedPointOld = leftEyeUpPoint
+                    	headBalancedDistance, info = self.findDistance(self.headBalancedPointOld,  leftEyeUpPoint)
+                    	if (headBalancedDistance > self.maxHeadDistance):
+                            self.maxHeadDistance = headBalancedDistance
+                    	if (self.maxHeadDistance >= self.horizBalanceTrigger):
+                            self.maxHeadDistance = 0
+                            print("Balançou a cabeça: ", headBalancedDistance)
+                            print("PointOld: ", self.headBalancedPointOld)
+                            self.countHeadBalanced = self.countHeadBalanced + 1
+                            if (self.countHeadBalanced == self.totalCountBalanced):
+                            	self.countHeadBalanced = 0                                 
+                            	if (self.relay3AlreadyActived == 0):
+                                	SerialArduino.write('1\n'.encode())
+                                	self.relay3AlreadyActived = 1
+                            	else:
+                                	SerialArduino.write('0\n'.encode()) 
+                                	self.relay3AlreadyActived = 0
+                            	cv2.waitKey(1000)
+                    	else:
+                            print("Não balançou a cabeça: ", headBalancedDistance)
+						#print("face[leftEyeUp]: ", headBalancedDistance)
                 faces.append(face)
 
         return img, faces
