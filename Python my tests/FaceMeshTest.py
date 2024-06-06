@@ -39,9 +39,9 @@ class FaceMeshDetector:
         self.relay2AlreadyActived = 0
         self.relay3AlreadyActived = 0
         self.totalCountClosed = 10
-        self.totalCountBalanced = 5
+        self.totalCountBalanced = 10
         self.headBalancedPointOld = None
-        self.horizBalanceTrigger = 30
+        self.horizBalanceTrigger = 50
         self.maxHeadDistance = 0
 
     def findFaceMesh(self, img, draw=True, SerialArduino = None):
@@ -125,11 +125,10 @@ class FaceMeshDetector:
                     	if (headBalancedDistance > self.maxHeadDistance):
                             self.maxHeadDistance = headBalancedDistance
                     	if (self.maxHeadDistance >= self.horizBalanceTrigger):
-                            self.maxHeadDistance = 0
-                            print("Balançou a cabeça: ", headBalancedDistance)
-                            print("PointOld: ", self.headBalancedPointOld)
+                            self.maxHeadDistance = (self.horizBalanceTrigger / 2)
                             self.countHeadBalanced = self.countHeadBalanced + 1
                             if (self.countHeadBalanced == self.totalCountBalanced):
+                            	print("Balançou a cabeça: ", headBalancedDistance)
                             	self.countHeadBalanced = 0                                 
                             	if (self.relay3AlreadyActived == 0):
                                 	SerialArduino.write('1\n'.encode())
