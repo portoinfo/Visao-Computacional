@@ -1,1 +1,1 @@
-headBalancedPointOld
+self.initial_left_eye_distance

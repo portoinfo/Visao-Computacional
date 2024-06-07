@@ -41,7 +41,7 @@ class FaceMeshDetector:
         self.totalCountClosed = 10
         self.totalCountBalanced = 10
         self.headBalancedPointOld = None
-        self.horizBalanceTrigger = 50
+        self.horizBalanceTrigger = 70
         self.maxHeadDistance = 0
 
     def findFaceMesh(self, img, draw=True, SerialArduino = None):
@@ -78,7 +78,7 @@ class FaceMeshDetector:
                     	self.totalLeftEye += leftEyeVerticalDistance
                     	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
                         	self.initial_left_eye_distance = self.totalLeftEye / self.valueToAverage                        
-                        	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+                        	#print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
 						# calculate distance for mouth_points
                     	mouthUpPoint = face[point_mouth_1]
                     	MouthDownPoint = face[point_mouth_2]
@@ -86,7 +86,8 @@ class FaceMeshDetector:
                     	self.totalMouth += mouthVerticalDistance
                     	if (self.initial_mouth_distance == 0) and (self.count == self.valueToAverage):
                         	self.initial_mouth_distance = self.totalMouth / self.valueToAverage    
-                        	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
+                        	print("Aguardando gestos corporais para atuvar/desativar dispositivos . . .")
+                        	#print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
                     	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15) and (self.initial_mouth_distance > 0):
                             self.countMouthOpened = self.countMouthOpened + 1
                             if (self.countMouthOpened == self.totalCountClosed):
@@ -115,8 +116,8 @@ class FaceMeshDetector:
                             	#cv2.waitKey(1000)
                     	else:
                         	self.countLeftEyeClosed = 0
-                    	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
-                        	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+                    	#if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
+                        #	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
                     	self.count = self.count + 1
                         # processing head balance 
                     	if (self.headBalancedPointOld == None):
