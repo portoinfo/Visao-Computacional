@@ -92,10 +92,10 @@ class FaceMeshDetector:
                             self.countMouthOpened = self.countMouthOpened + 1
                             if (self.countMouthOpened == self.totalCountClosed):
                             	if (self.relay1AlreadyActived == 0):
-                                	 SerialArduino.write('1\n'.encode())
+                                	 SerialArduino.write('0\n'.encode())
                                 	 self.relay1AlreadyActived = 1
                             	else:
-                                	 SerialArduino.write('0\n'.encode()) 
+                                	 SerialArduino.write('1\n'.encode()) 
                                 	 self.relay1AlreadyActived = 0     
                             	print("A boca está aberta . . .")
                             	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
@@ -106,10 +106,10 @@ class FaceMeshDetector:
                             self.countLeftEyeClosed = self.countLeftEyeClosed + 1
                             if (self.countLeftEyeClosed == self.totalCountClosed):
                             	if (self.relay2AlreadyActived == 0):
-                                	 SerialArduino.write('3\n'.encode())
+                                	 SerialArduino.write('2\n'.encode())
                                 	 self.relay2AlreadyActived = 1
                             	else:
-                                	 SerialArduino.write('2\n'.encode()) 
+                                	 SerialArduino.write('3\n'.encode()) 
                                 	 self.relay2AlreadyActived = 0     
                             	print("A olho está fechado . . .")
                             	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
@@ -132,10 +132,10 @@ class FaceMeshDetector:
                             	#print("Balançou a cabeça: ", headBalancedDistance)
                             	self.countHeadBalanced = 0                                 
                             	if (self.relay3AlreadyActived == 0):
-                                	SerialArduino.write('1\n'.encode())
+                                	SerialArduino.write('4\n'.encode())
                                 	self.relay3AlreadyActived = 1
                             	else:
-                                	SerialArduino.write('0\n'.encode()) 
+                                	SerialArduino.write('5\n'.encode()) 
                                 	self.relay3AlreadyActived = 0
                             	cv2.waitKey(500)
                     	#else:
@@ -198,12 +198,12 @@ def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated
         finges1 = detectorHands.fingersUp(hands[0])
         if finges1[0] == 0 and finges1[1] == 1 and finges1[2] == 1 and finges1[3] == 1 and finges1[4] == 1:
             if (alreadyActivated1 == 0):
-                SerialArduino.write('1\n'.encode())    
+                SerialArduino.write('0\n'.encode())    
                 alreadyActivated1 = 1  
                 print("ativou rele 1 . . .")
         if finges1[0] == 0 and finges1[1] == 0 and finges1[2] == 0 and finges1[3] == 0 and finges1[4] == 0:
             if (alreadyActivated1 == 1):
-                SerialArduino.write('0\n'.encode())
+                SerialArduino.write('1\n'.encode())
                 print("Desativou rele 1 . . .")
                 alreadyActivated1 = 0
         # Check if a second hand is detected
@@ -226,12 +226,12 @@ def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated
             finges2 = detectorHands.fingersUp(hands[1])
             if finges2[0] == 0 and finges2[1] == 1 and finges2[2] == 1 and finges2[3] == 0 and finges2[4] == 0:
                 if (alreadyActivated2 == 0):
-                    SerialArduino.write('3\n'.encode()) 
+                    SerialArduino.write('2\n'.encode()) 
                     alreadyActivated2 = 1
                     print("Ativou rele 2 . . .")     
             if finges2[0] == 0 and finges2[1] == 0 and finges2[2] == 0 and finges2[3] == 0 and finges2[4] == 0:
                 if (alreadyActivated2 == 1):
-                    SerialArduino.write('2\n'.encode())
+                    SerialArduino.write('3\n'.encode())
                     alreadyActivated2 = 0
                     print("Desativou rele 2 . . .")
 
