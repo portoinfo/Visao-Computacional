@@ -1,1 +1,1 @@
-self.initial_left_eye_distance
+relay1AlreadyActived

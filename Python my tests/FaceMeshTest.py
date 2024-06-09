@@ -8,18 +8,19 @@ import cv2
 import mediapipe as mp
 import math
 import serial
+import time
 from cvzone.HandTrackingModule import HandDetector
 
 
 class FaceMeshDetector:
 
-    def __init__(self, staticMode=False, maxFaces=2, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_left_eye_distance=0):
+    def __init__(self, staticMode=False, maxFaces=2, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_head_moved_distance=0):
         self.staticMode = staticMode
         self.maxFaces = maxFaces
         self.minDetectionCon = minDetectionCon
         self.minTrackCon = minTrackCon
         self.initial_mouth_distance = initial_mouth_distance
-        self.initial_left_eye_distance = initial_left_eye_distance
+        self.initial_head_moved_distance = initial_head_moved_distance
 
         self.mpDraw = mp.solutions.drawing_utils
         self.mpFaceMesh = mp.solutions.face_mesh
@@ -33,17 +34,19 @@ class FaceMeshDetector:
         self.totalLeftEye=0
         self.valueToAverage = 100
         self.countLeftEyeClosed = 0
-        self.countHeadBalanced = 0
         self.countMouthOpened = 0
         self.relay1AlreadyActived = 0
         self.relay2AlreadyActived = 0
         self.relay3AlreadyActived = 0
         self.totalCountClosed = 10
-        self.totalCountBalanced = 10
         self.headBalancedPointOld = None
-        self.horizBalanceTrigger = 70
+        self.horizBalanceTrigger = 85
         self.maxHeadDistance = 0
-
+        self.head_moved_trigger = 3
+# Get the time in seconds 
+        self.time_sec_old = time.time() + 2
+        self.time_sec_limit = 2
+        
     def findFaceMesh(self, img, draw=True, SerialArduino = None):
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.faceMesh.process(self.imgRGB)
@@ -76,9 +79,8 @@ class FaceMeshDetector:
                     	leftEyeDownPoint = face[point_left_eye_2]
                     	leftEyeVerticalDistance, info = self.findDistance(leftEyeUpPoint, leftEyeDownPoint)
                     	self.totalLeftEye += leftEyeVerticalDistance
-                    	if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
-                        	self.initial_left_eye_distance = self.totalLeftEye / self.valueToAverage                        
-                        	#print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
+                    	if (self.initial_head_moved_distance == 0) and (self.count == self.valueToAverage):
+                        	self.initial_head_moved_distance = self.totalLeftEye / self.valueToAverage                        
 						# calculate distance for mouth_points
                     	mouthUpPoint = face[point_mouth_1]
                     	MouthDownPoint = face[point_mouth_2]
@@ -87,7 +89,6 @@ class FaceMeshDetector:
                     	if (self.initial_mouth_distance == 0) and (self.count == self.valueToAverage):
                         	self.initial_mouth_distance = self.totalMouth / self.valueToAverage    
                         	print("Aguardando gestos corporais para atuvar/desativar dispositivos . . .")
-                        	#print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
                     	if ((mouthVerticalDistance - self.initial_mouth_distance) > 15) and (self.initial_mouth_distance > 0):
                             self.countMouthOpened = self.countMouthOpened + 1
                             if (self.countMouthOpened == self.totalCountClosed):
@@ -97,12 +98,11 @@ class FaceMeshDetector:
                             	else:
                                 	 SerialArduino.write('1\n'.encode()) 
                                 	 self.relay1AlreadyActived = 0     
-                            	print("A boca está aberta . . .")
+                            	print("Abriu a boca . . .")
                             	print("MouthDistance: ", int(mouthVerticalDistance), " - initial: ", int(self.initial_mouth_distance))
-                            	#cv2.waitKey(1000)
                     	else:
                         	self.countMouthOpened = 0
-                    	if ((int(self.initial_left_eye_distance) - int(leftEyeVerticalDistance)) >= 4) and (self.initial_left_eye_distance > 0):
+                    	if ((int(self.initial_head_moved_distance) - int(leftEyeVerticalDistance)) >= self.head_moved_trigger) and (self.initial_head_moved_distance > 0):
                             self.countLeftEyeClosed = self.countLeftEyeClosed + 1
                             if (self.countLeftEyeClosed == self.totalCountClosed):
                             	if (self.relay2AlreadyActived == 0):
@@ -111,36 +111,36 @@ class FaceMeshDetector:
                             	else:
                                 	 SerialArduino.write('3\n'.encode()) 
                                 	 self.relay2AlreadyActived = 0     
-                            	print("A olho está fechado . . .")
-                            	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
-                            	#cv2.waitKey(1000)
+                            	print("Afastou a cabeça da câmera . . .")
+                            	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_head_moved_distance))
                     	else:
                         	self.countLeftEyeClosed = 0
-                    	#if (self.initial_left_eye_distance == 0) and (self.count == self.valueToAverage):
-                        #	print("leftEyeDistance: ", int(leftEyeVerticalDistance), " - initial: ", int(self.initial_left_eye_distance))
                     	self.count = self.count + 1
                         # processing head balance 
                     	if (self.headBalancedPointOld == None):
                         	self.headBalancedPointOld = leftEyeUpPoint
-                    	headBalancedDistance, info = self.findDistance(self.headBalancedPointOld,  leftEyeUpPoint)
-                    	if (headBalancedDistance > self.maxHeadDistance):
-                            self.maxHeadDistance = headBalancedDistance
+                    	time_diff = (time.time() - self.time_sec_old)
+                    	if (time_diff > self.time_sec_limit):
+                        	headBalancedDistance, info = self.findDistance(self.headBalancedPointOld,  leftEyeUpPoint)
+                        	print("headBalancedDistance: ", headBalancedDistance)
+                        	if (headBalancedDistance > self.maxHeadDistance):
+                        	    self.maxHeadDistance = headBalancedDistance
+                    	else:
+                        	self.maxHeadDistance = 0
                     	if (self.maxHeadDistance >= self.horizBalanceTrigger):
-                            self.maxHeadDistance = (self.horizBalanceTrigger / 2)
-                            self.countHeadBalanced = self.countHeadBalanced + 1
-                            if (self.countHeadBalanced == self.totalCountBalanced):
-                            	#print("Balançou a cabeça: ", headBalancedDistance)
-                            	self.countHeadBalanced = 0                                 
+                            time_diff = (time.time() - self.time_sec_old)
+                            print("time_diff: ", time_diff)
+                            print("maxHeadDistance: ", self.maxHeadDistance)
+                            if (time_diff > self.time_sec_limit):
+                            	print("Balançou a cabeça . . . ") #, headBalancedDistance)
                             	if (self.relay3AlreadyActived == 0):
                                 	SerialArduino.write('4\n'.encode())
                                 	self.relay3AlreadyActived = 1
                             	else:
                                 	SerialArduino.write('5\n'.encode()) 
                                 	self.relay3AlreadyActived = 0
-                            	cv2.waitKey(500)
-                    	#else:
-                        #    print("Não balançou a cabeça: ", headBalancedDistance)
-						#print("face[leftEyeUp]: ", headBalancedDistance)
+                            	self.time_sec_old = time.time() 
+                            	self.maxHeadDistance = (self.horizBalanceTrigger / 2)
                 faces.append(face)
 
         return img, faces
@@ -254,7 +254,7 @@ def main():
         SerialArduino = None
 
 
-    detectorFace = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_left_eye_distance=0)
+    detectorFace = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5, minTrackCon=0.5, initial_mouth_distance=0, initial_head_moved_distance=0)
 # Initialize the HandDetector class with the given parameters
     detectorHands = HandDetector(staticMode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, minTrackCon=0.5)
 
@@ -268,7 +268,7 @@ def main():
         #if len(faces)!= 0:
         #   print(len(faces[0]))
 
-        img, alreadyActivated1, alreadyActivated2 = processHands(img, detectorHands, SerialArduino, alreadyActivated1, alreadyActivated2)
+        #img, alreadyActivated1, alreadyActivated2 = processHands(img, detectorHands, SerialArduino, alreadyActivated1, alreadyActivated2)
 
 		# show camera image with defined points
         cv2.imshow("Image", img)
