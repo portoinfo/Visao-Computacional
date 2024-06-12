@@ -17,6 +17,7 @@ def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated
 	# The 'draw' parameter draws landmarks and hand outlines on the image if set to True
 	# The 'flipType' parameter flips the image, making it easier for some detections
     hands, img = detectorHands.findHands(img, draw=True, flipType=True)
+
 	# Check if any hands are detected
     if hands:
 		# Information for the first hand detected
