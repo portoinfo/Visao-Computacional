@@ -12,7 +12,7 @@ import time
 from cvzone.HandTrackingModule import HandDetector
 
 
-def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated1 = 0, alreadyActivated2 = 0):
+def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated11 = 0, alreadyActivated12 = 0, alreadyActivated21 = 0, alreadyActivated22 = 0):
 	# Find hands in the current frame
 	# The 'draw' parameter draws landmarks and hand outlines on the image if set to True
 	# The 'flipType' parameter flips the image, making it easier for some detections
@@ -36,24 +36,24 @@ def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated
         #print("Distance betwwen hands: ", length)
         fingers1 = detectorHands.fingersUp(hands[0])
         if fingers1[0] == 0 and fingers1[1] == 1 and fingers1[2] == 1 and fingers1[3] == 1 and fingers1[4] == 1:
-            if (alreadyActivated1 == 0):
+            if (alreadyActivated11 == 0):
                 SerialArduino.write('0\n'.encode())    
-                alreadyActivated1 = 1  
+                alreadyActivated11 = 1  
                 print("ativou rele 1 para 4 dedos . . .")
         if fingers1[0] == 0 and fingers1[1] == 0 and fingers1[2] == 0 and fingers1[3] == 0 and fingers1[4] == 0:
-            if (alreadyActivated1 == 1):
+            if (alreadyActivated11 == 1):
                 SerialArduino.write('1\n'.encode())
                 print("Desativou rele 1 para 4 dedos. . .")
-                alreadyActivated1 = 0
+                alreadyActivated11 = 0
         if fingers1[0] == 0 and fingers1[1] == 1 and fingers1[2] == 1 and fingers1[3] == 0 and fingers1[4] == 0:
-            if (alreadyActivated2 == 0):
+            if (alreadyActivated12 == 0):
                 SerialArduino.write('2\n'.encode()) 
-                alreadyActivated2 = 1
+                alreadyActivated12 = 1
                 print("Ativou rele 2 para 2 dedos . . .")     
         if fingers1[0] == 0 and fingers1[1] == 0 and fingers1[2] == 0 and fingers1[3] == 0 and fingers1[4] == 0:
-            if (alreadyActivated2 == 1):
+            if (alreadyActivated12 == 1):
                 SerialArduino.write('3\n'.encode())
-                alreadyActivated2 = 0
+                alreadyActivated12 = 0
                 print("Desativou rele 2 para 2 dedos. . .")
 
         # Check if a second hand is detected
@@ -75,29 +75,29 @@ def processHands(img, detectorHands=None, SerialArduino = None, alreadyActivated
 
             fingers2 = detectorHands.fingersUp(hands[1])
             if fingers2[0] == 0 and fingers2[1] == 1 and fingers2[2] == 1 and fingers2[3] == 1 and fingers2[4] == 1:
-                if (alreadyActivated1 == 0):
+                if (alreadyActivated21 == 0):
                     SerialArduino.write('0\n'.encode())    
-                    alreadyActivated1 = 1  
+                    alreadyActivated21 = 1  
                     print("ativou rele 1 para 4 dedos . . .")
             if fingers2[0] == 0 and fingers2[1] == 0 and fingers2[2] == 0 and fingers2[3] == 0 and fingers2[4] == 0:
-                if (alreadyActivated1 == 1):
+                if (alreadyActivated21 == 1):
                     SerialArduino.write('1\n'.encode())
                     print("Desativou rele 1 para 4 dedos. . .")
-                    alreadyActivated1 = 0
+                    alreadyActivated21 = 0
             if fingers2[0] == 0 and fingers2[1] == 1 and fingers2[2] == 1 and fingers2[3] == 0 and fingers2[4] == 0:
-                if (alreadyActivated2 == 0):
+                if (alreadyActivated22 == 0):
                     SerialArduino.write('2\n'.encode()) 
-                    alreadyActivated2 = 1
+                    alreadyActivated22 = 1
                     print("Ativou rele 2 para 2 dedos . . .")     
             if fingers2[0] == 0 and fingers2[1] == 0 and fingers2[2] == 0 and fingers2[3] == 0 and fingers2[4] == 0:
-                if (alreadyActivated2 == 1):
+                if (alreadyActivated22 == 1):
                     SerialArduino.write('3\n'.encode())
-                    alreadyActivated2 = 0
+                    alreadyActivated22 = 0
                     print("Desativou rele 2 para 2 dedos. . .")
 
         #print(" ")  # New line for better readability of the printed output
 
-    return img, alreadyActivated1, alreadyActivated2
+    return img, alreadyActivated11, alreadyActivated12, alreadyActivated21, alreadyActivated22
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -117,14 +117,16 @@ def main():
 # Initialize the HandDetector class with the given parameters
     detectorHands = HandDetector(staticMode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, minTrackCon=0.5)
 
-    alreadyActivated1 = 0
-    alreadyActivated2 = 0
+    alreadyActivated11 = 0
+    alreadyActivated12 = 0
+    alreadyActivated21 = 0
+    alreadyActivated22 = 0
     
     while True:
         success, img = cap.read()
 
 
-        img, alreadyActivated1, alreadyActivated2 = processHands(img, detectorHands, SerialArduino, alreadyActivated1, alreadyActivated2)
+        img, alreadyActivated11, alreadyActivated12, alreadyActivated21, alreadyActivated22 = processHands(img, detectorHands, SerialArduino, alreadyActivated11, alreadyActivated12, alreadyActivated21, alreadyActivated22)
 
 		# show camera image with defined points
         cv2.imshow("Image", img)
